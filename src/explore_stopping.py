@@ -84,30 +84,29 @@ def run_and_plot_experiment_with_csv(csv_path: str) -> None:
     """
     Function to run experiment using candidates from a CSV file.
     """
-    NUMBER_OF_CANDIDATES = 1000
-    NUMBER_OF_EXPERIMENTS = 1
-    optimal_solution_found_count: Dict[str, float] = {str(i): 0 for i in range(1, NUMBER_OF_CANDIDATES + 1)}
-
     try:
         with open(csv_path) as csv_file:
-            candidates: List[int] = [int(line.strip()) for line in csv_file.readlines()]
+            candidates: List[float] = [float(line.strip()) for line in csv_file.readlines()]
     except FileNotFoundError:
         print(f"File {csv_path} not found.")
         return
     except ValueError:
-        print("Error: CSV file contains non-integer values.")
+        print("Error: CSV file contains non-float values.")
         return
 
-    run_experiment(candidates, optimal_solution_found_count, NUMBER_OF_CANDIDATES, NUMBER_OF_EXPERIMENTS)
+    NUMBER_OF_CANDIDATES = len(candidates)
+    optimal_solution_found_count: Dict[str, float] = {str(i): 0 for i in range(1, NUMBER_OF_CANDIDATES + 1)}
+
+    run_experiment(candidates, optimal_solution_found_count, NUMBER_OF_CANDIDATES, 1)
     plot("CSV File Experiment", optimal_solution_found_count)
 # End Test
 
 # Helper Functions
-def run_experiment(candidates: List[int], optimal_solution_found_count: Dict[str, float], NUMBER_OF_CANDIDATES: int, NUMBER_OF_EXPERIMENTS: int) -> None:
+def run_experiment(candidates: List[float], optimal_solution_found_count: Dict[str, float], NUMBER_OF_CANDIDATES: int, NUMBER_OF_EXPERIMENTS: int) -> None:
     """
     Simulates the experiment of stopping at various positions and checks the optimal solution.
     """
-    optimal_candidate: int = max(candidates)
+    optimal_candidate: float = max(candidates)
     for i in range(1, NUMBER_OF_CANDIDATES):
         for candidate in candidates[i:-1]:
             if candidate > max(candidates[:i]):
