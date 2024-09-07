@@ -97,8 +97,8 @@ def run_and_plot_experiment_with_csv(csv_path: str) -> None:
 def run_experiment(
         candidates: List[float],
         optimal_solution_found_count: Dict[str, float],
-        NUMBER_OF_CANDIDATES: int,
-        NUMBER_OF_EXPERIMENTS: int
+        number_of_candidates: int,
+        number_of_experiments: int
 ) -> None:
     """
     Simulates the experiment of stopping at various positions and checks if the optimal solution is found.
@@ -110,12 +110,12 @@ def run_experiment(
     - NUMBER_OF_EXPERIMENTS: Total number of experiments to run.
     """
     optimal_candidate: float = max(candidates)
-    for i in range(1, NUMBER_OF_CANDIDATES):
+    for i in range(1, number_of_candidates):
         max_seen: float = max(candidates[:i])
         for candidate in candidates[i:]:
             if candidate > max_seen:
                 if candidate == optimal_candidate:
-                    optimal_solution_found_count[str(i)] += 1 / NUMBER_OF_EXPERIMENTS
+                    optimal_solution_found_count[str(i)] += 1 / number_of_experiments
                 break
 
 
