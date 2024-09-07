@@ -1,88 +1,82 @@
 import random
+import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Callable, Optional
+
+# Constants
+NUMBER_OF_CANDIDATES: int = 50
+NUMBER_OF_EXPERIMENTS: int = 1000
+
 
 def main() -> None:
-    # Test
+    """
+    Main function to run and plot various experiments.
+
+    Executes:
+    - Experiments with candidates from CSV files.
+    - Uniform distribution experiments.
+    - Normal distribution experiments.
+    - Beta distribution experiments.
+    - Additional experiments with penalties (not implemented here).
+    """
+    # Test with CSV files
     run_and_plot_experiment_with_csv("../data/scenario1.csv")
     run_and_plot_experiment_with_csv("../data/scenario2.csv")
 
-    # Part 1
-    run_and_plot_experiments_with_uniform_distribution()
+    # Part 1: Uniform Distribution
+    run_and_plot_experiments_with_distribution(
+        distribution="uniform",
+        generator=lambda: random.sample(range(1000), NUMBER_OF_CANDIDATES),
+        params={}
+    )
 
-    # Part 2
-    run_and_plot_experiments_with_normal_distribution(10, 5)
-    run_and_plot_experiments_with_normal_distribution(5, 5)
-    run_and_plot_experiments_with_normal_distribution(5, 10)
+    # Part 2: Normal Distribution
+    run_and_plot_experiments_with_distribution(
+        distribution="normal",
+        generator=lambda: np.random.normal(50, 10, NUMBER_OF_CANDIDATES).tolist(),
+        params={"mean": 50, "stddev": 10}
+    )
 
-    # Part 3
-        # A
-    run_and_plot_experiments_with_uniform_distribution_and_penalty(1)
-    run_and_plot_experiments_with_uniform_distribution_and_penalty(5)
-    run_and_plot_experiments_with_uniform_distribution_and_penalty(10)
-        # B
-    run_and_plot_experiments_with_normal_distribution_and_penalty(10, 5, 1)
-    run_and_plot_experiments_with_normal_distribution_and_penalty(5, 5, 1)
-    run_and_plot_experiments_with_normal_distribution_and_penalty(5, 10, 1)
+    # Part 2: Beta Distribution
+    run_and_plot_experiments_with_distribution(
+        distribution="beta",
+        generator=lambda: np.random.beta(2, 7, NUMBER_OF_CANDIDATES).tolist(),
+        params={"alpha": 2, "beta": 7}
+    )
 
-    run_and_plot_experiments_with_normal_distribution_and_penalty(10, 5, 5)
-    run_and_plot_experiments_with_normal_distribution_and_penalty(5, 5, 5)
-    run_and_plot_experiments_with_normal_distribution_and_penalty(5, 10, 5)
+    # Part 3: Investment Decisions
+    # Add functions for investment decisions if needed
 
-    run_and_plot_experiments_with_normal_distribution_and_penalty(10, 5, 10)
-    run_and_plot_experiments_with_normal_distribution_and_penalty(5, 5, 10)
-    run_and_plot_experiments_with_normal_distribution_and_penalty(5, 10, 10)
 
-# Part 1
-def run_and_plot_experiments_with_uniform_distribution() -> None:
-    NUMBER_OF_CANDIDATES = 50
-    NUMBER_OF_EXPERIMENTS = 1000
+def run_and_plot_experiments_with_distribution(
+        distribution: str,
+        generator: Callable[[], List[float]],
+        params: Dict[str, float]
+) -> None:
+    """
+    Runs and plots experiments for a given distribution.
 
+    Args:
+    - distribution: Name of the distribution.
+    - generator: Function to generate candidate values based on the distribution.
+    - params: Parameters for the distribution (not used in this function but kept for potential use).
+    """
     optimal_solution_found_count: Dict[str, float] = {str(i): 0 for i in range(1, NUMBER_OF_CANDIDATES + 1)}
 
     for _ in range(NUMBER_OF_EXPERIMENTS):
-        candidates: List[int] = random.sample(range(1000), NUMBER_OF_CANDIDATES)
+        candidates = generator()
         run_experiment(candidates, optimal_solution_found_count, NUMBER_OF_CANDIDATES, NUMBER_OF_EXPERIMENTS)
 
-    plot("Uniform Distribution", optimal_solution_found_count)
-# End Part 1
+    plot(f"{distribution.capitalize()} Distribution", optimal_solution_found_count, params)
 
-# Part 2
-def run_and_plot_experiments_with_normal_distribution(alpha: float, beta: float) -> None:
-    """
-    Function placeholder for experiments with normal distribution.
-    """
-    NUMBER_OF_CANDIDATES = 50
-    NUMBER_OF_EXPERIMENTS = 1000
-    # Implementation needed
-    pass
-# End Part 2
 
-# Part 3
-def run_and_plot_experiments_with_uniform_distribution_and_penalty(penalty: float) -> None:
-    """
-    Function placeholder for experiments with uniform distribution and penalty.
-    """
-    NUMBER_OF_CANDIDATES = 50
-    NUMBER_OF_EXPERIMENTS = 1000
-    # Implementation needed
-    pass
-
-def run_and_plot_experiments_with_normal_distribution_and_penalty(alpha: float, beta: float, penalty: float) -> None:
-    """
-    Function placeholder for experiments with normal distribution and penalty.
-    """
-    NUMBER_OF_CANDIDATES = 50
-    NUMBER_OF_EXPERIMENTS = 1000
-    # Implementation needed
-    pass
-# End Part 3
-
-# Test
 def run_and_plot_experiment_with_csv(csv_path: str) -> None:
     """
-    Function to run experiment using candidates from a CSV file.
+    Runs an experiment using candidates from a CSV file and plots the results.
+
+    Args:
+    - csv_path: Path to the CSV file containing candidate values.
     """
     try:
         with open(csv_path) as csv_file:
@@ -94,29 +88,49 @@ def run_and_plot_experiment_with_csv(csv_path: str) -> None:
         print("Error: CSV file contains non-float values.")
         return
 
-    NUMBER_OF_CANDIDATES = len(candidates)
-    optimal_solution_found_count: Dict[str, float] = {str(i): 0 for i in range(1, NUMBER_OF_CANDIDATES + 1)}
+    optimal_solution_found_count: Dict[str, float] = {str(i): 0 for i in range(1, len(candidates) + 1)}
 
-    run_experiment(candidates, optimal_solution_found_count, NUMBER_OF_CANDIDATES, 1)
-    plot("CSV File Experiment", optimal_solution_found_count)
-# End Test
+    run_experiment(candidates, optimal_solution_found_count, len(candidates), 1)
+    plot("CSV File Experiment", optimal_solution_found_count, {})
 
-# Helper Functions
-def run_experiment(candidates: List[float], optimal_solution_found_count: Dict[str, float], NUMBER_OF_CANDIDATES: int, NUMBER_OF_EXPERIMENTS: int) -> None:
+
+def run_experiment(
+        candidates: List[float],
+        optimal_solution_found_count: Dict[str, float],
+        NUMBER_OF_CANDIDATES: int,
+        NUMBER_OF_EXPERIMENTS: int
+) -> None:
     """
-    Simulates the experiment of stopping at various positions and checks the optimal solution.
+    Simulates the experiment of stopping at various positions and checks if the optimal solution is found.
+
+    Args:
+    - candidates: List of candidate values.
+    - optimal_solution_found_count: Dictionary to record the count of optimal solutions found for each stopping position.
+    - NUMBER_OF_CANDIDATES: Total number of candidates.
+    - NUMBER_OF_EXPERIMENTS: Total number of experiments to run.
     """
     optimal_candidate: float = max(candidates)
     for i in range(1, NUMBER_OF_CANDIDATES):
-        for candidate in candidates[i:-1]:
-            if candidate > max(candidates[:i]):
+        max_seen: float = max(candidates[:i])
+        for candidate in candidates[i:]:
+            if candidate > max_seen:
                 if candidate == optimal_candidate:
                     optimal_solution_found_count[str(i)] += 1 / NUMBER_OF_EXPERIMENTS
                 break
 
-def plot(label: str, optimal_solution_found_count: Dict[str, float]) -> None:
+
+def plot(
+        label: str,
+        optimal_solution_found_count: Dict[str, float],
+        params: Optional[Dict[str, float]] = None
+) -> None:
     """
-    Plots the results of the experiments with improved aesthetics.
+    Plots the results of the experiments and includes parameters used.
+
+    Args:
+    - label: Title to be used for the plot.
+    - optimal_solution_found_count: Dictionary with stopping positions as keys and the percentage of optimal solutions found as values.
+    - params: Optional dictionary with parameters used in the experiment for inclusion in the plot.
     """
     positions: Tuple[str, ...]
     times_optimal: Tuple[float, ...]
@@ -129,6 +143,15 @@ def plot(label: str, optimal_solution_found_count: Dict[str, float]) -> None:
     plt.ylabel('Percent of Optimal Discovered', fontsize=14)
     plt.title('Optimal Solution Discovery Across Different Positions', fontsize=16)
     plt.suptitle(label, fontsize=14, fontweight='bold')  # Add subtitle
+
+    if params:
+        param_text = "\n".join(f"{key}: {value}" for key, value in params.items())
+        plt.gca().text(0.95, 0.95, param_text,
+                       fontsize=12,
+                       verticalalignment='top',
+                       horizontalalignment='right',
+                       bbox=dict(facecolor='white', alpha=0.8, edgecolor='black', boxstyle='round,pad=0.5'),
+                       transform=plt.gca().transAxes)
 
     plt.grid(True, linestyle='--', alpha=0.7)
 
@@ -164,7 +187,7 @@ def plot(label: str, optimal_solution_found_count: Dict[str, float]) -> None:
     plt.legend(fontsize=12)
     plt.tight_layout()
     plt.show()
-# End Helper Functions
+
 
 if __name__ == "__main__":
     main()
