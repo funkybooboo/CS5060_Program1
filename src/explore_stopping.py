@@ -21,38 +21,42 @@ def main() -> None:
     - Additional experiments with penalties (not implemented here).
     """
     # Test with CSV files
-    run_and_plot_experiment_with_csv("../data/scenario1.csv")
-    run_and_plot_experiment_with_csv("../data/scenario2.csv")
+    run_and_plot_experiment("../data/scenario1.csv")
+    run_and_plot_experiment("../data/scenario2.csv")
 
     # Part 1: Uniform Distribution
-    run_and_plot_experiments_with_distribution(
+    run_and_plot_experiments(
         distribution="uniform",
         generator=lambda: random.sample(range(1000), NUMBER_OF_CANDIDATES),
         params={}
     )
 
     # Part 2: Normal Distribution
-    run_and_plot_experiments_with_distribution(
+    run_and_plot_experiments(
         distribution="normal",
         generator=lambda: np.random.normal(50, 10, NUMBER_OF_CANDIDATES).tolist(),
         params={"mean": 50, "stddev": 10}
     )
 
     # Part 2: Beta Distribution
-    run_and_plot_experiments_with_distribution(
+    run_and_plot_experiments(
         distribution="beta",
         generator=lambda: np.random.beta(2, 7, NUMBER_OF_CANDIDATES).tolist(),
         params={"alpha": 2, "beta": 7}
     )
 
-    # Part 3: Investment Decisions
-    # Add functions for investment decisions if needed
+    # Part 3:
 
 
-def run_and_plot_experiments_with_distribution(
+    # Part 3:
+
+
+
+def run_and_plot_experiments(
         distribution: str,
         generator: Callable[[], List[float]],
-        params: Dict[str, float]
+        params: Dict[str, float],
+        evaluation_cost: int = 0
 ) -> None:
     """
     Runs and plots experiments for a given distribution.
@@ -66,12 +70,12 @@ def run_and_plot_experiments_with_distribution(
 
     for _ in range(NUMBER_OF_EXPERIMENTS):
         candidates = generator()
-        run_experiment(candidates, optimal_solution_found_count, NUMBER_OF_CANDIDATES, NUMBER_OF_EXPERIMENTS)
+        run_experiment(candidates, optimal_solution_found_count, NUMBER_OF_CANDIDATES, NUMBER_OF_EXPERIMENTS, evaluation_cost)
 
     plot(f"{distribution.capitalize()} Distribution", optimal_solution_found_count, params)
 
 
-def run_and_plot_experiment_with_csv(csv_path: str) -> None:
+def run_and_plot_experiment(csv_path: str) -> None:
     """
     Runs an experiment using candidates from a CSV file and plots the results.
 
@@ -98,26 +102,38 @@ def run_experiment(
         candidates: List[float],
         optimal_solution_found_count: Dict[str, float],
         number_of_candidates: int,
-        number_of_experiments: int
+        number_of_experiments: int,
+        evaluation_cost: int = 0
 ) -> None:
     """
     Simulates the experiment of stopping at various positions and checks if the optimal solution is found.
 
     Args:
     - candidates: List of candidate values.
+
     - optimal_solution_found_count: Dictionary to record the count of optimal solutions found for each stopping position.
     - number_of_candidates: Total number of candidates.
     - number_of_experiments: Total number of experiments to run.
     """
-    optimal_candidate: float = max(candidates)
+
+    def calculate_reward(candidate: float, i: int) -> float:
+        return candidate - (i * evaluation_cost)
+
+    def find_optimal_candidate() -> float:
+        return max([calculate_reward(candidates[i], i) for i in range(number_of_candidates)])
+
+    def find_best_candidate_so_far() -> float:
+        return max([calculate_reward(candidates[j], j) for j in range(i)])
+
+    optimal_candidate: float = find_optimal_candidate()
     for i in range(1, number_of_candidates):
-        max_seen: float = max(candidates[:i])
+        best_candidate_so_far: float = find_best_candidate_so_far()
         for candidate in candidates[i:]:
-            if candidate > max_seen:
-                if candidate == optimal_candidate:
+            reward: float = calculate_reward(candidate, i)
+            if reward > best_candidate_so_far:
+                if reward == optimal_candidate:
                     optimal_solution_found_count[str(i)] += 1 / number_of_experiments
                 break
-
 
 def plot(
         label: str,
