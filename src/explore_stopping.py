@@ -82,7 +82,7 @@ def run_and_plot_experiment_with_csv(csv_path: str) -> None:
         with open(csv_path) as csv_file:
             candidates: List[float] = [float(line.strip()) for line in csv_file.readlines()]
     except FileNotFoundError:
-        print(f"File {csv_path} not found.")
+        print(f"Error: File {csv_path} not found.")
         return
     except ValueError:
         print("Error: CSV file contains non-float values.")
@@ -106,8 +106,8 @@ def run_experiment(
     Args:
     - candidates: List of candidate values.
     - optimal_solution_found_count: Dictionary to record the count of optimal solutions found for each stopping position.
-    - NUMBER_OF_CANDIDATES: Total number of candidates.
-    - NUMBER_OF_EXPERIMENTS: Total number of experiments to run.
+    - number_of_candidates: Total number of candidates.
+    - number_of_experiments: Total number of experiments to run.
     """
     optimal_candidate: float = max(candidates)
     for i in range(1, number_of_candidates):
