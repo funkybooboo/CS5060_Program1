@@ -2,166 +2,125 @@ import random
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.ticker import MaxNLocator
-from typing import Dict, List, Tuple, Callable, Optional
+from typing import Dict, List, Callable, Optional
 
 # Constants
-NUMBER_OF_CANDIDATES: int = 50
-NUMBER_OF_EXPERIMENTS: int = 1000
+NUM_DATA_POINTS: int = 50
+NUM_EXPERIMENTS: int = 1000
 
+class Distribution:
+    def __init__(self, title: str, generator: Callable[[], List[float]], params: Dict[str, float]):
+        self.title = title
+        self.generator = generator
+        self.params = params
 
 def main() -> None:
     """
-    Main function to run and plot various experiments.
-
-    Executes:
-    - Experiments with candidates from CSV files.
-    - Uniform distribution experiments.
-    - Normal distribution experiments.
-    - Beta distribution experiments.
-    - Additional experiments with penalties (not implemented here).
+    Main function to execute and plot various experiments.
     """
     # Test with CSV files
-    run_and_plot_experiment("../data/scenario1.csv")
-    run_and_plot_experiment("../data/scenario2.csv")
+    plot_csv_experiment("../data/scenario1.csv")
+    plot_csv_experiment("../data/scenario2.csv")
 
-    # Part 1: Uniform Distribution
-    run_and_plot_experiments(
-        distribution="uniform",
-        generator=lambda: random.sample(range(1000), NUMBER_OF_CANDIDATES),
+    # Uniform Distribution
+    uniform_dist = Distribution(
+        title="Uniform Distribution",
+        generator=lambda: random.sample(range(1000), NUM_DATA_POINTS),
         params={}
     )
+    run_and_plot_distribution(uniform_dist)
 
-    # Part 2: Normal Distribution
-    run_and_plot_experiments(
-        distribution="normal",
-        generator=lambda: np.random.normal(50, 10, NUMBER_OF_CANDIDATES).tolist(),
+    # Normal Distribution
+    normal_dist = Distribution(
+        title="Normal Distribution",
+        generator=lambda: np.random.normal(50, 10, NUM_DATA_POINTS).tolist(),
         params={"mean": 50, "stddev": 10}
     )
+    run_and_plot_distribution(normal_dist)
 
-    # Part 2: Beta Distribution
-    run_and_plot_experiments(
-        distribution="beta",
-        generator=lambda: np.random.beta(2, 7, NUMBER_OF_CANDIDATES).tolist(),
+    # Beta Distribution
+    beta_dist = Distribution(
+        title="Beta Distribution",
+        generator=lambda: np.random.beta(2, 7, NUM_DATA_POINTS).tolist(),
         params={"alpha": 2, "beta": 7}
     )
+    run_and_plot_distribution(beta_dist)
 
-    # Part 3:
-
-
-    # Part 3:
-
-
-
-def run_and_plot_experiments(
-        distribution: str,
-        generator: Callable[[], List[float]],
-        params: Dict[str, float],
-        evaluation_cost: int = 0
-) -> None:
+def run_and_plot_distribution(dist: Distribution, eval_cost: int = 0) -> None:
     """
-    Runs and plots experiments for a given distribution.
-
-    Args:
-    - distribution: Name of the distribution.
-    - generator: Function to generate candidate values based on the distribution.
-    - params: Parameters for the distribution (not used in this function but kept for potential use).
+    Runs experiments for a given distribution and plots the results.
     """
-    optimal_solution_found_count: Dict[str, float] = {str(i): 0 for i in range(1, NUMBER_OF_CANDIDATES + 1)}
+    optimal_counts: Dict[str, float] = {str(i): 0 for i in range(1, NUM_DATA_POINTS + 1)}
 
-    for _ in range(NUMBER_OF_EXPERIMENTS):
-        candidates = generator()
-        run_experiment(candidates, optimal_solution_found_count, NUMBER_OF_CANDIDATES, NUMBER_OF_EXPERIMENTS, evaluation_cost)
+    for _ in range(NUM_EXPERIMENTS):
+        data = dist.generator()
+        simulate_experiment(data, optimal_counts, NUM_DATA_POINTS, NUM_EXPERIMENTS, eval_cost)
 
-    plot(f"{distribution.capitalize()} Distribution", optimal_solution_found_count, params)
+    plot_results(dist.title, optimal_counts, dist.params)
 
-
-def run_and_plot_experiment(csv_path: str) -> None:
+def plot_csv_experiment(csv_path: str) -> None:
     """
-    Runs an experiment using candidates from a CSV file and plots the results.
-
-    Args:
-    - csv_path: Path to the CSV file containing candidate values.
+    Runs an experiment using distribution from a CSV file and plots the results.
     """
     try:
         with open(csv_path) as csv_file:
-            candidates: List[float] = [float(line.strip()) for line in csv_file.readlines()]
+            data = [float(line.strip()) for line in csv_file]
     except FileNotFoundError:
         print(f"Error: File {csv_path} not found.")
         return
     except ValueError:
-        print("Error: CSV file contains non-float values.")
+        print("Error: CSV file contains non-numeric values.")
         return
 
-    optimal_solution_found_count: Dict[str, float] = {str(i): 0 for i in range(1, len(candidates) + 1)}
+    optimal_counts: Dict[str, float] = {str(i): 0 for i in range(1, len(data) + 1)}
 
-    run_experiment(candidates, optimal_solution_found_count, len(candidates), 1)
-    plot("CSV File Experiment", optimal_solution_found_count, {})
+    simulate_experiment(data, optimal_counts, len(data), 1)
+    plot_results("CSV File Experiment", optimal_counts, {})
 
-
-def run_experiment(
-        candidates: List[float],
-        optimal_solution_found_count: Dict[str, float],
-        number_of_candidates: int,
-        number_of_experiments: int,
-        evaluation_cost: int = 0
+def simulate_experiment(
+        data: List[float],
+        optimal_counts: Dict[str, float],
+        num_data_points: int,
+        num_experiments: int,
+        eval_cost: int = 0
 ) -> None:
     """
-    Simulates the experiment of stopping at various positions and checks if the optimal solution is found.
-
-    Args:
-    - candidates: List of candidate values.
-
-    - optimal_solution_found_count: Dictionary to record the count of optimal solutions found for each stopping position.
-    - number_of_candidates: Total number of candidates.
-    - number_of_experiments: Total number of experiments to run.
+    Simulates the experiment and checks if the optimal solution is found.
     """
+    def compute_reward(candidate: float, pos: int) -> float:
+        return candidate - (pos * eval_cost)
 
-    def calculate_reward(candidate: float, i: int) -> float:
-        return candidate - (i * evaluation_cost)
+    optimal_value: float = max(data)
 
-    def find_optimal_candidate() -> float:
-        return max([calculate_reward(candidates[i], i) for i in range(number_of_candidates)])
-
-    def find_best_candidate_so_far() -> float:
-        return max([calculate_reward(candidates[j], j) for j in range(i)])
-
-    optimal_candidate: float = find_optimal_candidate()
-    for i in range(1, number_of_candidates):
-        best_candidate_so_far: float = find_best_candidate_so_far()
-        for candidate in candidates[i:]:
-            reward: float = calculate_reward(candidate, i)
-            if reward > best_candidate_so_far:
-                if reward == optimal_candidate:
-                    optimal_solution_found_count[str(i)] += 1 / number_of_experiments
+    for pos in range(1, num_data_points):
+        best_so_far: float = max(data[:pos])
+        for value in data[pos:]:
+            reward: float = compute_reward(value, pos)
+            if reward > best_so_far:
+                if reward == optimal_value:
+                    optimal_counts[str(pos)] += 1 / num_experiments
                 break
 
-def plot(
-        label: str,
-        optimal_solution_found_count: Dict[str, float],
+def plot_results(
+        title: str,
+        optimal_counts: Dict[str, float],
         params: Optional[Dict[str, float]] = None
 ) -> None:
     """
     Plots the results of the experiments and includes parameters used.
-
-    Args:
-    - label: Title to be used for the plot.
-    - optimal_solution_found_count: Dictionary with stopping positions as keys and the percentage of optimal solutions found as values.
-    - params: Optional dictionary with parameters used in the experiment for inclusion in the plot.
     """
-    positions: Tuple[str, ...]
-    times_optimal: Tuple[float, ...]
-    positions, times_optimal = zip(*optimal_solution_found_count.items())
+    positions, percentages = zip(*optimal_counts.items())
 
-    plt.figure(figsize=(14, 7))  # Increased width for better x-axis spacing
-    plt.plot(positions, times_optimal, marker='o', linestyle='-', color='b', label="Optimal Solution", linewidth=2)
+    plt.figure(figsize=(14, 7))
+    plt.plot(positions, percentages, marker='o', linestyle='-', color='b', label="Optimal Solution", linewidth=2)
 
     plt.xlabel('Position in Candidate List', fontsize=14)
-    plt.ylabel('Percent of Optimal Discovered', fontsize=14)
+    plt.ylabel('Percent of Optimal Solutions Found', fontsize=14)
     plt.title('Optimal Solution Discovery Across Different Positions', fontsize=16)
-    plt.suptitle(label, fontsize=14, fontweight='bold')  # Add subtitle
+    plt.suptitle(title, fontsize=14, fontweight='bold')
 
     if params:
-        param_text = "\n".join(f"{key}: {value}" for key, value in params.items())
+        param_text = "\n".join(f"{k}: {v}" for k, v in params.items())
         plt.gca().text(0.95, 0.95, param_text,
                        fontsize=12,
                        verticalalignment='top',
@@ -171,29 +130,21 @@ def plot(
 
     plt.grid(True, linestyle='--', alpha=0.7)
 
-    # Set x-axis ticks to show every 10th label or suitable interval
-    num_positions = len(positions)
-    if num_positions > 10:
-        plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True, prune='both'))  # Auto-prune ticks
-    plt.xticks(rotation=45, fontsize=12, ha='right')  # Rotate labels 45 degrees and align them to the right
+    if len(positions) > 10:
+        plt.gca().xaxis.set_major_locator(MaxNLocator(integer=True, prune='both'))
+    plt.xticks(rotation=45, fontsize=12, ha='right')
 
-    # Increase the bottom margin to provide more room for the labels
-    plt.subplots_adjust(bottom=0.2)  # Increase bottom margin
-
-    # Format y-axis ticks
+    plt.subplots_adjust(bottom=0.2)
     plt.yticks(fontsize=12)
 
-    # Highlight the maximum value
-    max_y: float = max(times_optimal)
-    max_x: int = times_optimal.index(max_y)
+    max_percentage: float = max(percentages)
+    max_pos: int = percentages.index(max_percentage)
 
-    # Set y-axis limits with extra space above the maximum value
-    plt.ylim(bottom=min(times_optimal), top=max_y * 1.2)  # Increase top limit for more space
+    plt.ylim(bottom=min(percentages), top=max_percentage * 1.2)
 
-    # Adjust annotation to be higher and to the left of the maximum value
-    plt.annotate(f'Max Optimal: ({positions[max_x]}, {max_y:.2f})',
-                 xy=(positions[max_x], max_y),
-                 xytext=(-80, 20),  # Move text left and up
+    plt.annotate(f'Max Optimal: ({positions[max_pos]}, {max_percentage:.2f})',
+                 xy=(positions[max_pos], max_percentage),
+                 xytext=(-80, 20),
                  textcoords='offset points',
                  arrowprops=dict(facecolor='red', arrowstyle='->'),
                  fontsize=12,
@@ -203,7 +154,6 @@ def plot(
     plt.legend(fontsize=12)
     plt.tight_layout()
     plt.show()
-
 
 if __name__ == "__main__":
     main()
